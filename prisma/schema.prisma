@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Course {
+  id        String     @id @default(cuid())
+  name      String
+  createdAt DateTime   @default(now())
+  pages     Page[]
+  questions Question[]
+}
+
+model Page {
+  id          String     @id @default(cuid())
+  courseId    String
+  course      Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  filePath    String
+  pageNumber  Int
+  textExtract String?
+  createdAt   DateTime   @default(now())
+  questions   Question[]
+
+  @@index([courseId])
+}
+
+model Question {
+  id           String        @id @default(cuid())
+  courseId     String
+  course       Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  pageId       String
+  page         Page          @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  question     String
+  answer       String
+  difficulty   String        @default("medium") // easy, medium, hard
+  type         String        @default("short") // short, explanation, extra
+  createdAt    DateTime      @default(now())
+  practiceStat PracticeStat?
+
+  @@index([courseId])
+  @@index([pageId])
+}
+
+model PracticeStat {
+  id            String   @id @default(cuid())
+  questionId    String   @unique
+  question      Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  lastSeenAt    DateTime @default(now())
+  correctStreak Int      @default(0)
+  ease          Float    @default(2.5)
+  intervalDays  Float    @default(0)
+  nextDueAt     DateTime @default(now())
+  timesSeen     Int      @default(0)
+
+  @@index([nextDueAt])
+}

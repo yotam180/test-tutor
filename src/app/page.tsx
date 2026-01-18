@@ -1,65 +1,115 @@
-import Image from "next/image";
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+interface Stats {
+  totalCourses: number;
+  totalQuestions: number;
+  questionsToReview: number;
+}
 
 export default function Home() {
+  const [stats, setStats] = useState<Stats | null>(null);
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const [coursesRes, practiceRes] = await Promise.all([
+          fetch("/api/courses"),
+          fetch("/api/practice?limit=1000"),
+        ]);
+        
+        const courses = await coursesRes.json();
+        const practice = await practiceRes.json();
+        
+        const now = new Date();
+        const questionsToReview = practice.questions?.filter(
+          (q: { nextDueAt: string | null; timesSeen: number }) => 
+            q.timesSeen === 0 || (q.nextDueAt && new Date(q.nextDueAt) <= now)
+        ).length || 0;
+
+        setStats({
+          totalCourses: courses.length || 0,
+          totalQuestions: practice.totalAvailable || 0,
+          questionsToReview,
+        });
+      } catch (e) {
+        console.error("Failed to load stats:", e);
+      }
+    }
+    loadStats();
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="space-y-12">
+      {/* Hero Section */}
+      <section className="text-center py-12">
+        <h1 className="text-4xl font-bold mb-4">
+          Study Smarter with AI
+        </h1>
+        <p className="text-[var(--muted)] text-lg max-w-2xl mx-auto mb-8">
+          Upload your study materials and let AI generate practice questions.
+          Master any subject with spaced repetition learning.
+        </p>
+        <div className="flex items-center justify-center gap-4">
+          <Link href="/courses" className="btn btn-primary text-base px-6 py-3">
+            Get Started
+          </Link>
+          <Link href="/practice" className="btn btn-outline text-base px-6 py-3">
+            Start Practicing
+          </Link>
+        </div>
+      </section>
+
+      {/* Stats */}
+      {stats && (
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="card text-center">
+            <div className="text-3xl font-bold text-[var(--primary)]">
+              {stats.totalCourses}
+            </div>
+            <div className="text-[var(--muted)]">Courses</div>
+          </div>
+          <div className="card text-center">
+            <div className="text-3xl font-bold text-[var(--success)]">
+              {stats.totalQuestions}
+            </div>
+            <div className="text-[var(--muted)]">Questions</div>
+          </div>
+          <div className="card text-center">
+            <div className="text-3xl font-bold text-[var(--warning)]">
+              {stats.questionsToReview}
+            </div>
+            <div className="text-[var(--muted)]">Due for Review</div>
+          </div>
+        </section>
+      )}
+
+      {/* Features */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="card">
+          <div className="text-2xl mb-3">📄</div>
+          <h3 className="font-semibold mb-2">Upload Study Materials</h3>
+          <p className="text-sm text-[var(--muted)]">
+            Upload PDF pages or images from your textbooks, notes, or slides.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="card">
+          <div className="text-2xl mb-3">🤖</div>
+          <h3 className="font-semibold mb-2">AI Question Generation</h3>
+          <p className="text-sm text-[var(--muted)]">
+            Our AI analyzes your materials and creates diverse practice questions.
+          </p>
         </div>
-      </main>
+        <div className="card">
+          <div className="text-2xl mb-3">🧠</div>
+          <h3 className="font-semibold mb-2">Spaced Repetition</h3>
+          <p className="text-sm text-[var(--muted)]">
+            Questions you struggle with appear more often. Master topics efficiently.
+          </p>
+        </div>
+      </section>
     </div>
   );
 }
