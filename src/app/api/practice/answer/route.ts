@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { calculateNextReview } from "@/lib/spacedRepetition";
 
-// POST /api/practice/answer - Record an answer and update spaced repetition
+// POST /api/practice/answer - Record an answer and update stats
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -27,22 +26,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Calculate new review parameters
-    const result = calculateNextReview(
-      correct,
-      stat.ease,
-      stat.intervalDays,
-      stat.correctStreak
-    );
-
     // Update the practice stat
     const updatedStat = await prisma.practiceStat.update({
       where: { questionId },
       data: {
-        ease: result.newEase,
-        intervalDays: result.newInterval,
-        correctStreak: result.newStreak,
-        nextDueAt: result.nextDueAt,
+        correctStreak: correct ? stat.correctStreak + 1 : 0,
         lastSeenAt: new Date(),
         timesSeen: { increment: 1 },
       },
@@ -51,9 +39,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       stat: updatedStat,
-      nextReviewIn: result.newInterval < 1 
-        ? `${Math.round(result.newInterval * 24 * 60)} minutes`
-        : `${Math.round(result.newInterval)} days`,
     });
   } catch (error) {
     console.error("Error recording answer:", error);

@@ -82,7 +82,7 @@ function PracticeContent() {
 
     setAnswering(true);
     try {
-      const res = await fetch("/api/practice/answer", {
+      await fetch("/api/practice/answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -91,18 +91,12 @@ function PracticeContent() {
         }),
       });
 
-      const data = await res.json();
-
       setSessionStats((prev) => ({
         correct: prev.correct + (correct ? 1 : 0),
         incorrect: prev.incorrect + (correct ? 0 : 1),
       }));
 
-      setFeedbackMessage(
-        correct
-          ? `✓ Next review in ${data.nextReviewIn}`
-          : `✗ You'll see this again in ${data.nextReviewIn}`
-      );
+      setFeedbackMessage(correct ? "✓ Correct!" : "✗ Incorrect");
 
       // Move to next question after short delay
       setTimeout(() => {

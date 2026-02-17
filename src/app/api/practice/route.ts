@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { selectQuestionsForPractice } from "@/lib/spacedRepetition";
 
-// GET /api/practice - Get questions for practice session
+// Shuffle array in place (Fisher-Yates algorithm)
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+// GET /api/practice - Get random questions for practice session
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -36,13 +45,13 @@ export async function GET(request: NextRequest) {
       courseName: q.course.name,
       courseId: q.courseId,
       pageNumber: q.page.pageNumber,
-      nextDueAt: q.practiceStat?.nextDueAt || null,
       timesSeen: q.practiceStat?.timesSeen || 0,
       correctStreak: q.practiceStat?.correctStreak || 0,
     }));
 
-    // Select questions using spaced repetition algorithm
-    const selected = selectQuestionsForPractice(questionsWithStats, limit);
+    // Randomly shuffle and select questions
+    const shuffled = shuffleArray(questionsWithStats);
+    const selected = shuffled.slice(0, limit);
 
     return NextResponse.json({
       questions: selected,
